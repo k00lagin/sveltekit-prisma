@@ -1,4 +1,4 @@
-import type { Request } from '@sveltejs/kit';
+import type { RequestEvent } from '@sveltejs/kit';
 import type { Locals } from '$lib/types';
 import PrismaClient from '$lib/prisma';
 
@@ -16,22 +16,22 @@ import PrismaClient from '$lib/prisma';
 const prisma = new PrismaClient();
 
 export type Todo = {
-	uid: string;
-	created_at: Date;
+	uid?: string;
+	created_at?: Date;
 	text: string;
 	done: boolean;
 };
 
 
-export async function api(request: Request<Locals>, resource: string, data?: Todo) {
+export async function api(event: RequestEvent<Locals>, resource: string, data?: Todo) {
 	// user must have a cookie set
-	if (!request.locals.userid) {
+	if (!event.locals.userid) {
 		return { status: 401 };
 	}
 
 	let body = {};
 	let status = 500;
-	switch (request.method.toUpperCase()) {
+	switch (event.request.method.toUpperCase()) {
 		case "DELETE":
 			await prisma.todo.delete({
 				where: {
@@ -72,7 +72,7 @@ export async function api(request: Request<Locals>, resource: string, data?: Tod
 	// behaviour is to show the URL corresponding to the form's "action"
 	// attribute. in those cases, we want to redirect them back to the
 	// /todos page, rather than showing the response
-	if (request.method !== 'GET' && request.headers.accept !== 'application/json') {
+	if (event.request.method !== 'GET' && event.request.headers.get('accept') !== 'application/json') {
 		return {
 			status: 303,
 			headers: {
